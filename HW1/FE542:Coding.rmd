@@ -1,0 +1,243 @@
+---
+title: "FE 542- HW1"
+author: "M.Furkan Isik"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+### Problem 1
+
+An urn contains three type A coins and two type B coin. When a type A coin is ipped, it comes up heads with probability 1/3, whereas a type B coin is  ipped, it comes up heads with  robability 2/3. A coin is randomly chosen from the urn and ipped. Given that theip landed on heads, what is the probability that it was a type B coin?
+
+Solution:
+
+0.5714286
+
+
+Prob(B|heads)= P(heads|B).P(B)/(P(heads))
+
+P(heads|B)=if the coin is B prob of getting head is 2/3 which is given in the question
+
+P(heads|A)=if the coin is A prob of getting head is  1/3 which is given in the question
+
+P(B)=2/5 There are totally 5 coins and 2 of them are B coins so the probability of chosing B coin is 2/5
+
+P(A)=3/5 There are totally 5 coins and 3 of them are A coins so the probability of chosing A coin is 3/5
+
+
+P(heads)= P(heads|B).P(B)+P(heads|A).P(A)
+
+
+
+Prob(B|heads)= P(heads|B).P(B)/(P(heads))
+
+- Calculating denominator of the equation
+```{r}
+denominator=2/3*2/5 + 1/3*3/5
+denominator
+
+```
+
+
+- Calculating numerator of the equation
+```{r}
+numerator=2/3*2/5
+numerator
+```
+
+- Showing the result
+```{r}
+result=numerator/denominator
+
+result
+
+
+```
+
+
+
+### Problem 2
+
+(i) Generate 100 observations from a normal distribution with mean 2 and variance 7.
+
+```{r}
+sample=rnorm(100,mean=2,sd=sqrt(7))
+
+sample
+```
+
+
+(ii) Compute the sample mean, standard deviation, skewness and kurtosis (if excess kurtosis state that clearly).
+
+
+```{r}
+mean(sample)
+```
+
+
+```{r}
+sd(sample)
+```
+
+- Measure of assymetry
+- if skewness is positive, the data is skewed right
+- if skewness is negative, the data is skewed left
+- if skewness is between −1 and −½ or between +½ and +1, the distribution is moderately skewed.
+- If skewness is between −½ and +½, the distribution is approximately symmetric.
+- If skewness is less than −1 or greater than +1, the distribution is highly skewed.
+
+We can say that sample is approximately symmetric since the skewness value is between −½ and +½
+```{r}
+library(fBasics)
+skewness(sample)
+```
+
+- Measure of tail thickness
+- Negative excess kurtosis has short tails Platykurtic
+- Positive excess kurtosis  have heavy tails Leptokurtic 
+
+We can say that sample is Platykurtic(tails are light)  since excess kurtosis value is negative
+```{r}
+kurtosis(sample)
+```
+
+(iii) Generate a Q-Q plot of the observations from (i) versus the standard normal distribu-tion. Describe your plot in no more than 3 sentences.
+
+-  Data is fairly normal distributed since majority of the data points in line with the 45 degree normal line.
+```{r}
+qqnorm(sample)
+qqline(sample,col="green")
+```
+
+
+
+### Problem 3
+
+(i) Download daily price data for January 1, 2017 through December 31, 2020 of Microsoft stock from Yahoo Finance. You may use the quantmod package in R for this purpose.
+
+
+```{r}
+library(quantmod)
+
+getSymbols('MSFT',src='yahoo',from='2017-01-01',to='2020-12-31')
+```
+
+(ii) Generate a plot of the closing prices and of daily log returns.
+
+- plot of the daily return
+```{r}
+r_arith=dailyReturn(MSFT)
+
+plot(r_arith)
+
+
+
+```
+
+
+- plot of daily log return
+```{r}
+r_log = dailyReturn(MSFT,type='log')
+
+plot(r_log)
+```
+
+(iii) Compute the sample mean, standard deviation, skewness and kurtosis (if excess kurtosis
+state that clearly) of the daily log returns.
+
+```{r}
+mean(r_log)
+sd(r_log)
+skewness(r_log)
+kurtosis(r_log)
+
+```
+
+(iv) Perform the Jarque-Bera Normality test (with 5% significance level) for daily log returns
+and interpret your results. Compare your result a visualization from a Q-Q plot.
+
+Ho: (Normal Distribution)
+Ha: (Non-Normal Distribution)
+
+- p value of Jarque - Bera Normalality Test Normalality Test is very small and smaller than significance level(0.05) so we can reject null hypothesis. Hence, the data is not normally distributed
+
+```{r}
+normalTest(r_log,method="jb")
+
+```
+
+(v) Compute and plot the lag-1 through lag-10 autocorrelation of the daily log returns.
+
+- plot the autocorrelation
+- calculate the autocorrelation
+
+```{r}
+acf(r_log, lag.max=10, plot=TRUE)
+
+acf(r_log, lag.max=10,plot="False")
+```
+
+
+(vi) Test if the lag-5 autocorrelation is non-zero (with 5% significance level). Interpret your
+results.
+
+H0 : ρl = 0
+Ha : ρl not equal 0
+if |t ratio|>Zα/2, we reject null hypothesis
+
+
+
+- According to individual ACF test, our t ratio is not bigger than qnorm value. Hence, we fail to reject null.
+```{r}
+
+ac = acf(r_log,plot=TRUE)
+T = length(r_log)
+ratio = sqrt(T)*ac$acf[6]
+```
+
+
+```{r}
+significance = 0.05
+abs(ratio) > qnorm(1-significance/2) #FALSE = FAIL TO REJECT NULL
+```
+
+
+
+
+
+
+
+(vii) Perform the Ljung-Box test to test if the first 2, first 5, and first 8 lagged autocorrela-
+tions are non-zero (with 5% significance level). Interpret your results.
+
+H0: The data are independently distributed(no auto correlation)
+Ha: The data are not independently distributed; they exhibit serial correlation.
+
+
+-First two autocorrelations are non zero because  p- value of the Ljung-Box Tests is too small with given 5% significance level. Hence, we can reject null hypothesis(no auto correlation)
+```{r}
+Box.test(r_log,lag=2,type="Ljung-Box") 
+```
+
+- First 5 autocorrelations are non zero because  p- value of the Ljung-Box Tests is too small in comparison to  given 5% significance level. Hence, we can reject null hypothesis( no auto correlation)
+
+```{r}
+Box.test(r_log,lag=5,type="Ljung-Box") 
+```
+
+- First 8 autocorrelations are non zero because  p- value of the Ljung-Box Tests is too small in comparison to  given 5% significance level. Hence, we can reject null hypothesis( no auto correlation)
+
+
+```{r}
+Box.test(r_log,lag=8,type="Ljung-Box") 
+```
+
+
+
+
