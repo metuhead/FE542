@@ -1,0 +1,93 @@
+---
+title: "HW4- FE542"
+author: "M.Furkan Isik"
+date: "4/16/2021"
+output: word_document
+---
+
+
+
+# Promlem 2
+
+In R create a report in pdf format using RMarkdown (or, if you choose to use Python instead,create a Jupyter notebook) to:
+
+
+## (i) Download daily price data for January 1, 2000 through December 31, 2020 of Amazonstock from Yahoo Finance. Compute theweeklylogarithmic returnsrt. You may usethe quantmod package in R for this purpose.
+```{r}
+library(quantmod)
+getSymbols('AMZN',src='yahoo',from='2000-01-01',to='2020-12-31')
+r = weeklyReturn(AMZN,type="log")
+length(r)
+
+```
+
+
+## ii) Using lagged returnsrt−1,rt−2,rt−3as input, build a 3-2-1 feed-forward neural networkto forecast 1-step-ahead returns. Use data up to December 31, 2018 as the trainingdata set and the remainder as the testing data. Calculate the mean squared error onthe test data.
+
+
+```{r}
+library(nnet) 
+#Predict returns
+r = as.numeric(r)
+y_train = r[4:991] 
+x_train = cbind(r[3:990],r[2:989],r[1:988])
+nn = nnet(x_train,y_train,size=2,linout=TRUE) #3-2-1 NN (output is real valued)
+summary(nn)
+```
+
+- the mean squared error is 0.00146048
+```{r}
+#the mean squared error
+ytest = r[992:1096]
+xtest = cbind(r[991:1095],r[990:1094],r[989:1093])
+ypred = predict(nn,xtest)
+prednet = mean((ytest - ypred)^2)
+print(prednet)
+
+
+```
+
+
+
+
+## (iii) Using lagged returnsrt−1,rt−2,rt−3and their signs (directions) to build a 6-5-1 feed-forward neural network to forecast the 1-step-aheaddirectionof Microsoft stock pricemovement (with 1 denoting upward movement and 0 downward movement). Use dataup to December 31, 2018 as the training data set and the remainder as the testing data.Calculate the mean squared error on the test data
+
+```{r}
+#Predict direction of returns
+dy_train = ifelse(r[4:991] > 0,1,0)
+x_train = cbind(r[3:990],r[2:989],r[1:988])
+x_train = cbind(x_train , ifelse(r[3:990]>0,1,0))
+x_train = cbind(x_train , ifelse(r[2:989]>0,1,0))
+x_train = cbind(x_train , ifelse(r[1:988]>0,1,0))
+nn = nnet(x_train,dy_train,size=5,linout=F) 
+summary(nn)
+
+
+```
+
+
+
+- mean squared error is 0.2504239
+- accuracy is 0.6 which is not quite high
+
+```{r}
+#mean squared error
+
+dy_test = ifelse(r[992:1096] > 0,1,0)
+x_test = cbind(r[991:1095],r[990:1094],r[989:1093])
+x_test = cbind(x_test , ifelse(r[991:1095]>0,1,0))
+x_test = cbind(x_test , ifelse(r[990:1094]>0,1,0))
+x_test = cbind(x_test , ifelse(r[989:1093]>0,1,0))
+
+dy_pred = predict(nn,x_test)
+msfe = mean((dy_test - dy_pred)^2)
+print(msfe)
+acc = 1 - sum(abs(dy_test - ifelse(dy_pred > 0.5,1,0)))/length(dy_test)
+print(acc)
+
+```
+
+
+
+
+
