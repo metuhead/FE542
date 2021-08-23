@@ -1,0 +1,186 @@
+---
+title: "FE 542- HW3"
+author: "M.Furkan Isik"
+date: "3/22/2021"
+output: word_document
+---
+
+
+
+#Problem 1
+
+In R create a report in pdf format using RMarkdown (or, if you choose to use Python instead,create a Jupyter notebook) to
+
+
+(i)  Download daily price data for January 1, 1980 through December 31, 2019 of Boeingstock from Yahoo Finance.  You may use the quantmod package in R for this purpose.
+
+
+```{r}
+
+library(quantmod)
+
+
+getSymbols(Symbols = "BA",src="yahoo",from="1980-01-01", to="2019-12-31",periodicity="monthly")
+
+
+
+```
+
+
+- Calculating Monthly returns
+
+```{r}
+R= BA$BA.Close/lag(BA$BA.Close) -1
+
+R= R[2:length(R)]
+
+head(R)
+
+```
+
+
+- Calculating Monthly log returns
+
+```{r}
+
+logR=log(1+R)
+
+head(logR)
+
+```
+
+
+(ii) Is there any evidence of serial correlations in the monthly log returns. Use autocor-
+relations and 5% significance level to answer the question. If yes, remove the serial
+correlations.
+
+
+- The p-value of Box-Ljung test is higher than 0.05( 0.3433), so we fail to reject null hypothesis(no serial correlation)
+
+- We could say that there is no serial correlation
+
+```{r}
+
+acf(logR)
+
+
+Box.test(logR,type="Ljung-Box")
+
+```
+
+
+
+
+
+
+
+
+(iii) Is there any evidence of ARCH effects in the monthly log returns? Use the residual
+series if there are serial correlations in part (ii). Use Ljung-Box statistics for the squared
+returns (or residuals) with 6 and 12 lags of autocorrelations and 5% significance level
+to answer the question.
+
+
+
+- First, find the difference between logreturns and its mean value to come up with residuals
+
+- Then take the square of residuals
+
+```{r}
+
+y= logR-mean(logR)
+
+head(y)
+
+
+```
+
+
+- Use Ljung Box test(lag value 6) to test ARCH effects
+
+- The p value of the Ljung-Box statistic is 0.02026, with 5% significance level,  we can say there is ARCH effect in the log returns
+
+```{r}
+Box.test(y^2,lag=6,type="Ljung")
+
+```
+
+
+- Use Ljung Box test(lag value 12) to test ARCH effects
+
+
+```{r}
+Box.test(y^2,lag=12,type="Ljung")
+```
+
+
+(iv) Identify an ARCH model for the data and fit the identified model. Write down the
+fitted model and justify your choice of parameters.
+
+
+- According to PACF and ACF, ARCH(3) model could be appropriate to fit
+
+- Different models tried and modified depending on the significance of coefficients and
+
+- Among ARCH(3,0), ARCH(1,0) and  ARMA(1,0)+ARCH(1,1), ARCH(3,0) model fits the better into the data 
+
+
+- fitted model Coefficient(s):
+
+       mu      omega     alpha1     alpha2     alpha3  
+0.0122236  0.0035564  0.0754545  0.0606447  0.3513973
+
+
+
+```{r}
+
+par(mfrow=c(1,2))
+
+pacf(abs(logR^2))
+
+acf(abs(logR^2))
+
+
+```
+
+
+- ARCH(3,0) model
+
+```{r}
+library(fGarch)
+
+g1=garchFit(logR~garch(3,0),data=logR,trace=F)
+
+summary(g1)
+
+```
+
+
+
+- ARCH(1,0) model
+- alpha 1 is not significant
+
+```{r}
+m1=garchFit(logR~garch(1,0),data=logR,trace=F)
+
+summary(m1)
+
+
+```
+
+
+
+- ARMA(1,0)+ARCH(1,1)
+
+```{r}
+
+# Next, fit an ARMA(1,0)+GARCH(1,1) model with  Gaussian noises
+
+m2=garchFit(logR~arma(1,0)+garch(1,1),data=logR,trace=F)
+
+summary(m2)
+
+
+```
+
+
