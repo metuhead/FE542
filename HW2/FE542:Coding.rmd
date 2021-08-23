@@ -1,0 +1,229 @@
+---
+title: "FE 542-HW2"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+library(stats)
+```
+
+## Problem 1
+
+
+(iv)
+(a)  Simulate 1000 terms of this time series withr0=−0.02 andr−1= 0.01.
+
+
+```{r}
+
+
+w=arima.sim(n=1000,model=list(ar=c(0,0.20)), innov = rnorm(n=1000,mean=0,sd=sqrt(0.1)))
+head(w)
+
+acf(w)
+#ts.plot(w)
+```
+
+
+
+(b)  Using the generated time series, find the sample mean and variance.  How do thesevalues compare with those computed analytically?
+
+
+- The mean is close to 0 which is the analytical value for the mean 
+
+-  variance is almost 0.1 which is the analytical value for the variance
+
+
+```{r}
+
+mean(w)
+
+var(w)
+
+```
+
+
+
+(c)  Using the generated time series, find the sample lag-1 and lag-2 autocorrelations.How do these values compare with those computed analytically?
+
+- Lag one auto correlation is 0.055 which is very close to analytical value of 0
+
+- Lag two auto correlation is 0.165 which is also close to analytical value of 0.2
+
+
+```{r}
+acf(w,lag.max=2,plot=FALSE)
+
+```
+
+
+
+## Problem 2
+
+iv)  In R create a report in pdf format using RMarkdown (or, if you choose to use Pythoninstead, create a Jupyter notebook) to:
+
+
+(a)  Simulate 1000 terms of this time series.
+
+
+```{r}
+MA1=arima.sim(n=1000, model=list(ma=c(0.20)),innov = rnorm(1000,mean=0,sd=sqrt(0.001)))
+
+head(MA1)
+
+acf(MA1)
+```
+
+
+(b)  Using the generated time series, find the sample mean and variance.  How do thesevalues compare with those computed analytically?
+
+- The mean is close -0.003000503  which is  very close to the analytical value  of 0
+
+- The variance is  0.001246287 which is very close to the analytical value of 0.00104
+
+
+```{r}
+
+mean(MA1)
+var(MA1)
+
+
+```
+
+
+
+(c)  Using the generated time series, find the sample lag-1 and lag-2 autocorrelations.How do these values compare with those computed analytically?
+
+```{r}
+
+acf(MA1,lag.max = 2,plot=FALSE)
+
+
+```
+
+
+- Lag one auto correlation is 0.191  whereas analytical value is 0.1923, they are pretty close to each other
+
+- Lag two auto correlation is 0.019 whereas analytical value is 0, they are close to each other, it could be better to increase the number of terms
+
+
+
+
+## Problem 3
+
+
+
+(i)  Import the monthly yields of Moody’s Aaa seasoned bonds from January 1,  1962 toDecember 31, 2020 fromhomework02.csvprovided on Canvas.  The data are obtainedfrom the Federal Reserve Bank of St. Louis.  Monthly yields are averages of daily yields
+
+
+
+```{r}
+Moodys=read.csv("/Users/metuhead/Desktop/FE 542/homework02.csv")
+
+head(Moodys)
+```
+
+
+(ii)  Obtain  the  summary  statistics  (sample  mean,  standard  deviation,  skewness,excesskurtosis) of this yield series.
+
+- Sample Mean is 7.063729
+
+- Standard Deviation is 2.677317	
+
+- Skewness is 0.724596	  the data is moderately skewed right
+
+- Kurtosis is 0.286346    the tails of the distribution is almost behaves the same as normal distribution
+
+```{r}
+library(fBasics)
+basicStats(Moodys["AAA"])
+
+
+```
+
+
+
+
+(iii)  Build a time series model for this data.  Evaluate its performance.  Justify your choices.
+
+
+- taking log of the yields
+- From the graph we see a exponential decay in a ACF, then  for now AR model would be wise to use
+
+```{r}
+
+LG=log(Moodys$AAA)
+
+par(mfrow=c(2,2))
+
+# Plot of log of the yields
+plot(LG,type="l")
+
+# Plot of differencing of log of the yields
+
+plot(diff(LG),type="l")
+
+# Auto correlation plot of acf
+acf(LG)
+pacf(LG)
+```
+
+
+- From the AIC we see that AIC is lowest (0) at lag 8, so using order of 8 would be wise
+
+```{r}
+
+m1=ar(diff(LG),method="mle")
+
+m1$aic
+
+
+```
+
+
+- Unit Root Test : perform the test H0 : β = 1 versus Ha : β < 1.
+
+- Null hypothesis is there is a unit root, Alternative hypothesis there is no unit root
+
+- When the process has no unit root, it is stationary and vice versa
+
+
+The p value of our Augmented Dickey-Fuller Test is 0.4128, then we fail to reject null hypothesis.
+Hence the data is non stationary, it could be a good idea using ARIMA model
+
+
+```{r}
+library(fUnitRoots)
+
+adfTest(LG,lags=8)
+
+```
+
+
+
+- Qutoe from book: "In some studies, interest rates, foreign exchange rates, or the price series of an asset are of interest.These series tend to be nonstationary.In this case, the log price series is unit-root nonstationary and hence can be treated as an ARIMA process "
+
+- We use difference method to transform nonstationary process to stationary process,
+- I used the arima model for the data
+
+```{r}
+m3=arima(diff(LG), order=c(8,0,0))
+m3
+
+
+```
+
+
+
+
+
+
+
+
+
+
