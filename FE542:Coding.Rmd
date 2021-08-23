@@ -1,0 +1,151 @@
+---
+title: "FE542-HW5"
+author: "M.Furkan Isik"
+date: "4/28/2021"
+output:
+  word_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Problem 1
+
+
+## (i)  Construct single time series autoregressive models for the single time series c1t and c10t.
+
+- To decide order of the model, pacf values with different lags observed
+- For c1t we have lowest pacf value at lag 3 and lag 7, therefore lag 2 was chosen for order of the  model
+- For c10t we have lowest pacf value at lag 4 and lag 7, therefore lag 3 was chosen for order model
+
+
+```{r}
+df <- read.csv("homework05.csv")
+c1t=df$DGS1[2:708]-df$DGS1[1:707]
+c10t= df$DGS10[2:708]-df$DGS10[1:707]
+
+ct <- data.frame(c1t,c10t)
+c1t.pacf <- pacf(x = c1t, lag.max = 10)
+c10t.pacf <- pacf(c10t, lag.max = 10)
+
+
+```
+
+
+
+- Constructing ar models with order 2 and order 3
+
+```{r}
+ar1 <- arima(c1t, order = c(2,0,0))
+ar10 <- arima(c10t, order = c(3,0,0))
+ar1
+ar10
+```
+
+## ii)  Build a bivariateautoregressive model for the two change series.
+
+
+- Used Varselect function to find the lowest AIC value
+- Lag 2 has the huge drop in AIC value, after that although values are smaller, there is not a huge drop, so lag 2 is chosen
+
+```{r}
+library(vars)
+
+ct.var <- VARselect(ct, lag.max = 5)
+ct.var$criteria 
+```
+
+
+
+```{r}
+VAR_est <- VAR(ct,2)
+summary(VAR_est)
+```
+
+
+-  The reduced form of VAR(1) model is similar to this r(t)=phi(0)+phi(1)*r(t-1)+phi(2)*r(t-1)+a(t)
+
+```{r}
+
+phi0 = c(VAR_est$varresult$c1t$coefficients[5],VAR_est$varresult$c10t$coefficients[5])
+phi1 = matrix(c(VAR_est$varresult$c1t$coefficients[1:2],
+VAR_est$varresult$c10t$coefficients[1:2]), nrow = 2, byrow = T)
+phi2 = matrix(c(VAR_est$varresult$c1t$coefficients[3:4],
+VAR_est$varresult$c10t$coefficients[3:4]),nrow = 2, byrow = T)
+phi0
+phi1
+phi2
+
+```
+
+
+## iii)  Transform the constructed bivariate model into a structural form.
+
+- The bi-variate model will be transfered into structural form
+- In order to do that, covariance matrix of  residuals created  and cholesky decompostion applied 
+- The VAR(2) structural form would be,  Ar(t)=phi0.star + phi1.star*r(t-1) + phi2.star*r(t-2) + b(t)
+
+```{r}
+
+amat = diag(2)
+amat[2,1] = NA
+svar1 = SVAR(VAR_est, Amat = amat)
+A = svar1$A
+B = svar1$B
+phi0.star = A%*%phi0
+phi1.star = A%*%phi1
+phi2.star = A%*%phi2
+phi0.star
+phi1.star
+phi2.star
+
+
+
+```
+
+
+- phi1 value is -0.006801116 
+- phi 2 value is 0.02627412 and both phi1 and phi2 is very close to 0.
+- it could be said that lag 1 and lag 2 don't have crucial impact on c10t and c1t prediction
+
+```{r}
+phi1
+phi2
+
+```
+
+
+## (iv)  Briefly discuss the implications of the vector autoregressive model and compare with the single time series models.
+
+- Both models were compared in terms of Rsquared values 
+- R squared value of AR model c1t=0.1846312 and c10t=0.1359105
+- R squared value of VAR model  c1t= 0.1978   c10t=0.1321
+- Therefore, it could be said that  VAR model is slighly better in comparison to sigle time series model  in terms of  explaning the variability 
+
+```{r}
+SST1 = c1t-mean(c1t)
+SST1 = SST1^2
+SST1 = sum(SST1)
+RST1 = (ar1$residuals)^2
+RST1 = sum(RST1)
+Rsqrd1 <- 1 - (RST1/SST1)
+Rsqrd1
+```
+
+
+```{r}
+SST2 = c10t-mean(c10t)
+SST2 = SST2^2
+SST2 = sum(SST2)
+RST2 = (ar10$residuals)^2
+RST2 = sum(RST2)
+Rsqrd2 <- 1 - (RST2/SST2)
+Rsqrd2
+```
+
+
+
+
